@@ -1,88 +1,79 @@
-<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zoom Embeddable Phone - Fixed</title>
+    <title>Document</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <style>
-        body {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            margin: 0;
-        }
-
-        iframe {
-            flex: 1;
-            height: 100%;
-            border: none;
-        }
-    </style>
 </head>
 
 <body>
-    <button class="ZoomButtonId">Click to Call Extension 1826</button>
+    <button class="ZoomButtonId">Click to Call</button>
     <iframe src="https://applications.zoom.us/integration/phone/embeddablephone/home" id="zoom-embeddable-phone-iframe"
-        allow="clipboard-read; clipboard-write https://applications.zoom.us">
-    </iframe>
+        allow="clipboard-read; clipboard-write https://applications.zoom.us"></iframe>
+</body>
+<script type="text/javascript">
+    $(document).ready(function () {
+        onZoomPhoneIframeApiReady();
+        $("#btnDisplayData").click(function (e) {
 
-    <script type="text/javascript">
-        $(document).ready(function () {
-            const iframe = document.querySelector('iframe#zoom-embeddable-phone-iframe');
-            const iframeWindow = iframe.contentWindow;
-            const targetOrigin = 'https://applications.zoom.us';
-            let isReady = false;
-            console.log('isReady', isReady);
+            var Date = $("[id*=txtFromDate]").val();
+            var Disposition = $("[id*=drbDisposition]").val();
+            var PatientStatus = $("[id*=drbPatientStatus]").val();
+            ReminderCallfromCode(Date, Disposition, PatientStatus);
+        });
 
-            // Initialize once
-            iframeWindow.postMessage({
+        function onZoomPhoneIframeApiReady(a) {
+
+            console.log('onZoomPhoneIframeApiReady')
+            document.querySelector('iframe#zoom-embeddable-phone-iframe').contentWindow.postMessage({
+
                 type: 'zp-init-config',
                 data: {
+
                     enableSavingLog: false,
                     enableAutoLog: false,
                     enableContactSearching: false,
                     enableContactMatching: false,
-                    enableAISummary: true
+                    enableAISummary: true,
+                    // notePageConfiguration:
                 }
-            }, targetOrigin);
+            }, 'https://applications.zoom.us');
+        };
 
-            // Button click
-            $(".ZoomButtonId").click(function () {
-                if (isReady) {
-                    iframeWindow.postMessage({
-                        type: 'zp-make-call',
-                        data: {
-                            number: "1851",
-                            autoDial: true
-                        }
-                    }, targetOrigin);
-                } else {
-                    console.log('Not init');
-                }
-            });
 
-            // Listen to events (for debugging)
-            window.addEventListener('message', (e) => {
-                if (e.origin !== 'https://applications.zoom.us') return;
-                const data = e.data;
-                if (data) {
-                    console.log('Zoom event:', data);
-                    if (data.type === 'zp-ready') {
-                        console.log('Initalized!', data.data);
-                        isReady = true;
-                    }
-                    if (data.type === 'zp-call-ringing-event') {
-                        console.log('Ringing!', data.data);
-                    }
-                    if (data.type === 'zp-error-event') {
-                        console.error('Zoom error:', data.data);
-                    }
+        $(".ZoomButtonId").click(function () {
+
+            onZoomPhoneIframeApiReady();
+            document.querySelector('iframe#zoom-embeddable-phone-iframe').contentWindow.postMessage({
+
+                type: 'zp-make-call',
+                data: {
+
+                    number: 1851,
+                    //callerId: 916828521038\
+                    autoDial: true
                 }
-            });
+            }, 'https://applications.zoom.us');
+        })
+
+
+        window.addEventListener('message', (e) => {
+
+            const data = e.data;
+            if (data) {
+
+                console.log(data);
+                switch (data.type) {
+
+                    case 'zp-call-ringing-event': // listen to all the event types that you need\
+                        console.log(data.data);
+                        break;
+                }
+            }
         });
-    </script>
-</body>
+
+    })
+</script>
 
 </html>
