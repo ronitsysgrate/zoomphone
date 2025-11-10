@@ -1,79 +1,76 @@
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Zoom Embeddable Phone - Fixed</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+        }
+    </style>
 </head>
 
 <body>
     <button class="ZoomButtonId">Click to Call</button>
     <iframe src="https://applications.zoom.us/integration/phone/embeddablephone/home" id="zoom-embeddable-phone-iframe"
-        allow="clipboard-read; clipboard-write https://applications.zoom.us"></iframe>
-</body>
-<script type="text/javascript">
-    $(document).ready(function () {
-        onZoomPhoneIframeApiReady();
-        $("#btnDisplayData").click(function (e) {
+        allow="clipboard-read; clipboard-write https://applications.zoom.us">
+    </iframe>
 
-            var Date = $("[id*=txtFromDate]").val();
-            var Disposition = $("[id*=drbDisposition]").val();
-            var PatientStatus = $("[id*=drbPatientStatus]").val();
-            ReminderCallfromCode(Date, Disposition, PatientStatus);
-        });
+    <script type="text/javascript">
+        $(document).ready(function () {
+            const iframe = document.querySelector('iframe#zoom-embeddable-phone-iframe');
+            const iframeWindow = iframe.contentWindow;
+            const targetOrigin = 'https://applications.zoom.us';
 
-        function onZoomPhoneIframeApiReady(a) {
-
-            console.log('onZoomPhoneIframeApiReady')
-            document.querySelector('iframe#zoom-embeddable-phone-iframe').contentWindow.postMessage({
-
+            // Initialize once
+            iframeWindow.postMessage({
                 type: 'zp-init-config',
                 data: {
-
                     enableSavingLog: false,
                     enableAutoLog: false,
                     enableContactSearching: false,
                     enableContactMatching: false,
-                    enableAISummary: true,
-                    // notePageConfiguration:
+                    enableAISummary: true
                 }
-            }, 'https://applications.zoom.us');
-        };
+            }, targetOrigin);
 
+            // Button click
+            $(".ZoomButtonId").click(function () {
+                // Small delay to ensure iframe is ready (or listen for zp-ready-event)
+                setTimeout(() => {
+                    iframeWindow.postMessage({
+                        type: 'zp-make-call',
+                        data: {
+                            number: "extension:1851",  // <-- Critical: use "extension:XXXX" for internal
+                            autoDial: true             // <-- Critical: actually dials
+                            // callerId: "your_caller_id_if_needed"
+                        }
+                    }, targetOrigin);
+                }, 1000);
+            });
 
-        $(".ZoomButtonId").click(function () {
-
-            onZoomPhoneIframeApiReady();
-            document.querySelector('iframe#zoom-embeddable-phone-iframe').contentWindow.postMessage({
-
-                type: 'zp-make-call',
-                data: {
-
-                    number: 1826
-                    //callerId: 916828521038\
-                    //autoDial:\
+            // Listen to events (for debugging)
+            window.addEventListener('message', (e) => {
+                if (e.origin !== 'https://applications.zoom.us') return;
+                const data = e.data;
+                if (data) {
+                    console.log('Zoom event:', data);
+                    if (data.type === 'zp-call-ringing-event') {
+                        console.log('Ringing!', data.data);
+                    }
+                    if (data.type === 'zp-error-event') {
+                        console.error('Zoom error:', data.data);
+                    }
                 }
-            }, 'https://applications.zoom.us');
-        })
-
-
-        window.addEventListener('message', (e) => {
-
-            const data = e.data;
-            if (data) {
-
-                console.log(data);
-                switch (data.type) {
-
-                    case 'zp-call-ringing-event': // listen to all the event types that you need\
-                        console.log(data.data);
-                        break;
-                }
-            }
+            });
         });
-
-    })
-</script>
+    </script>
+</body>
 
 </html>
