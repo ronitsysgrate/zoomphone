@@ -13,11 +13,17 @@
             flex-direction: column;
             margin: 0;
         }
+
+        iframe {
+            flex: 1;
+            height: 100%;
+            border: none;
+        }
     </style>
 </head>
 
 <body>
-    <button class="ZoomButtonId">Click to Call</button>
+    <button class="ZoomButtonId">Click to Call Extension 1826</button>
     <iframe src="https://applications.zoom.us/integration/phone/embeddablephone/home" id="zoom-embeddable-phone-iframe"
         allow="clipboard-read; clipboard-write https://applications.zoom.us">
     </iframe>
@@ -27,6 +33,8 @@
             const iframe = document.querySelector('iframe#zoom-embeddable-phone-iframe');
             const iframeWindow = iframe.contentWindow;
             const targetOrigin = 'https://applications.zoom.us';
+            let isReady = false;
+            console.log('isReady', isReady);
 
             // Initialize once
             iframeWindow.postMessage({
@@ -42,17 +50,17 @@
 
             // Button click
             $(".ZoomButtonId").click(function () {
-                // Small delay to ensure iframe is ready (or listen for zp-ready-event)
-                setTimeout(() => {
+                if (isReady) {
                     iframeWindow.postMessage({
                         type: 'zp-make-call',
                         data: {
-                            number: "extension:1851",  // <-- Critical: use "extension:XXXX" for internal
+                            number: "123",
                             autoDial: true             // <-- Critical: actually dials
-                            // callerId: "your_caller_id_if_needed"
                         }
                     }, targetOrigin);
-                }, 1000);
+                } else {
+                    console.log('Not init');
+                }
             });
 
             // Listen to events (for debugging)
@@ -61,6 +69,10 @@
                 const data = e.data;
                 if (data) {
                     console.log('Zoom event:', data);
+                    if (data.type === 'zp-ready') {
+                        console.log('Initalized!', data.data);
+                        isReady = true;
+                    }
                     if (data.type === 'zp-call-ringing-event') {
                         console.log('Ringing!', data.data);
                     }
