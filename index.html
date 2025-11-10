@@ -1,160 +1,79 @@
-<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zoom Phone Smart Embed with Logging</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-        }
-
-        #status {
-            width: 350px;
-            height: 200px;
-            border: 1px solid #ccc;
-            overflow-y: auto;
-            background: white;
-            padding: 10px;
-            margin-bottom: 10px;
-            font-size: 12px;
-        }
-
-        .status-success {
-            color: green;
-        }
-
-        .status-error {
-            color: red;
-        }
-
-        .status-info {
-            color: blue;
-        }
-
-        #zoom-embeddable-phone-iframe {
-            width: 350px;
-            height: 580px;
-            border: none;
-        }
-    </style>
+    <title>Document</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 
 <body>
-    <!-- <button onclick="onZoomPhoneIframeApiReady()">Test API Ready</button> -->
+    <button class="ZoomButtonId">Click to Call</button>
     <iframe src="https://applications.zoom.us/integration/phone/embeddablephone/home" id="zoom-embeddable-phone-iframe"
-        allow="clipboard-read; clipboard-write; microphone; camera https://applications.zoom.us">
-    </iframe>
+        allow="clipboard-read; clipboard-write https://applications.zoom.us"></iframe>
+</body>
+<script type="text/javascript">
+    $(document).ready(function () {
+        onZoomPhoneIframeApiReady();
+        $("#btnDisplayData").click(function (e) {
 
-    <script>
-
-        // Listen for ALL messages from Zoom (for event logging)
-        window.addEventListener('message', (e) => {
-            console.log('Received message:', e.origin, e.data);
-
-            if (e.origin !== 'https://applications.zoom.us') {
-                console.log(`IGNORED: Invalid origin ${e.origin}`);
-                return;
-            }
-
-            const data = e.data;
-            if (!data || !data.type) return;
-
-            console.log(`RECEIVED EVENT: ${data.type}`);
-
-            // Log event data (for debugging)
-            if (data.data) {
-                console.log('Event Data:', data.data);
-            }
-
-            // Handle iframe ready (fallback if global function not called)
-            if (data.type === 'onZoomPhoneIframeApiReady') {
-                onZoomPhoneIframeApiReady();
-            }
+            var Date = $("[id*=txtFromDate]").val();
+            var Disposition = $("[id*=drbDisposition]").val();
+            var PatientStatus = $("[id*=drbPatientStatus]").val();
+            ReminderCallfromCode(Date, Disposition, PatientStatus);
         });
 
-        // Get URL parameters
-        function getUrlParams() {
-            // const params = new URLSearchParams(window.location.search);
-            const phoneNumber = 826; //params.get('phoneNumber');
-            return { phoneNumber };
-        }
+        function onZoomPhoneIframeApiReady(a) {
 
-        // Safe postMessage wrapper
-        function safePostMessage(iframe, message, targetOrigin) {
-            try {
-                if (!iframe) {
-                    throw new Error('Iframe not found');
-                }
-                iframe.contentWindow.postMessage(message, targetOrigin);
-                console.log(`postMessage sent successfully: ${message.type}`);
-                return true;
-            } catch (error) {
-                console.log(`postMessage ERROR: ${error.message}`);
-                return false;
-            }
-        }
+            console.log('onZoomPhoneIframeApiReady')
+            document.querySelector('iframe#zoom-embeddable-phone-iframe').contentWindow.postMessage({
 
-        // Global function called by Zoom iframe when ready
-        window.onZoomPhoneIframeApiReady = function () {
-            console.log('Zoom Phone Iframe API is READY!', 'success');
-
-            const iframe = document.querySelector('#zoom-embeddable-phone-iframe');
-            if (!iframe) {
-                console.log('ERROR: Iframe not found!');
-                return;
-            }
-
-            // Initialize widget
-            console.log('Initializing widget...');
-            const initMessage = {
                 type: 'zp-init-config',
                 data: {
+
                     enableSavingLog: false,
                     enableAutoLog: false,
                     enableContactSearching: false,
                     enableContactMatching: false,
                     enableAISummary: true,
-                    disableInactiveTabCallEvent: true
+                    // notePageConfiguration:
                 }
-            };
-            safePostMessage(iframe, initMessage, 'https://applications.zoom.us');
+            }, 'https://applications.zoom.us');
+        };
 
-            // Make call if phoneNumber provided
-            const { phoneNumber } = getUrlParams();
-            if (phoneNumber) {
-                console.log(`Initiating call to: ${phoneNumber}`);
-                const callMessage = {
-                    type: 'zp-make-call',
-                    data: {
-                        number: phoneNumber,
-                        autoDial: true
-                    }
-                };
-                safePostMessage(iframe, callMessage, 'https://applications.zoom.us');
-            } else {
-                console.log('No phone number provided in URL params. Call not initiated.');
+
+        $(".ZoomButtonId").click(function () {
+
+            onZoomPhoneIframeApiReady();
+            document.querySelector('iframe#zoom-embeddable-phone-iframe').contentWindow.postMessage({
+
+                type: 'zp-make-call',
+                data: {
+
+                    number: 1826
+                    //callerId: 916828521038\
+                    //autoDial:\
+                }
+            }, 'https://applications.zoom.us');
+        })
+
+
+        window.addEventListener('message', (e) => {
+
+            const data = e.data;
+            if (data) {
+
+                console.log(data);
+                switch (data.type) {
+
+                    case 'zp-call-ringing-event': // listen to all the event types that you need\
+                        console.log(data.data);
+                        break;
+                }
             }
-        }
+        });
 
-        // Page load
-        console.log('Page loaded successfully');
-
-        // Fallback timeout if iframe doesn't load
-        setTimeout(() => {
-            if (typeof onZoomPhoneIframeApiReady !== 'function') {
-                console.log('WARNING: Iframe API did not trigger within 5s. Check network/console.');
-            }
-        }, 10000);
-    </script>
-</body>
+    })
+</script>
 
 </html>
